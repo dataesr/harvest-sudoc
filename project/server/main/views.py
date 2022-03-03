@@ -20,12 +20,12 @@ def home():
 @main_blueprint.route('/harvest', methods=['POST'])
 def run_task_harvest():
     args = request.get_json(force=True)
-    notices_id = args.get('notices_id')
+    id_ref = args.get('id_ref')
     logger.debug(args)
-    if notices_id:
+    if id_ref:
         with Connection(redis.from_url(current_app.config['REDIS_URL'])):
             q = Queue(REDIS_QUEUE, default_timeout=21600)
-            task = q.enqueue(create_task_harvest, notices_id)
+            task = q.enqueue(create_task_harvest, id_ref)
         response_object = {
             'status': 'success',
             'data': {
@@ -35,7 +35,7 @@ def run_task_harvest():
     else:
         response_object = {
             'status': 'error',
-            'message': 'Missing notices_id array'
+            'message': 'Missing id_ref array'
         }
     return jsonify(response_object)
 

@@ -9,12 +9,27 @@ from project.server.main.utils_swift import set_objects
 logger = get_logger(__name__)
 
 
-def create_task_harvest(notices_id: list) -> None:
-    logger.debug(f'Create task harvest for sudoc ids : {notices_id}')
+def get_sudoc_ids(id_ref: str) -> list:
+    logger.debug(f'Get all sudoc ids for person {id_ref}')
+    sudoc_ids = []
+    response = requests.get(f'https://www.idref.fr/services/biblio/{id_ref}.json').json()
+    roles = response.get('sudoc', {}).get('result', {}).get('role', [])
+    roles = roles if isinstance(roles, list) else [roles]
+    for role in roles:
+        docs = role.get('doc', [])
+        docs = docs if isinstance(docs, list) else [docs]
+        for doc in docs:
+            sudoc_ids.append(doc.get('id'))
+    sudoc_ids = list(filter(None, sudoc_ids))
+    return list(set(sudoc_ids))
+
+
+def create_task_harvest(id_ref: str) -> None:
+    logger.debug(f'Create harvest task for id_ref : {id_ref}')
     today = datetime.datetime.today().strftime('%Y/%m/%d')
-    notices_id = notices_id if isinstance(notices_id, list) else [notices_id]
+    sudoc_ids = get_sudoc_ids(id_ref=id_ref)
     chunk_size = 500
-    chunks = [notices_id[i:i+chunk_size] for i in range(0, len(notices_id), chunk_size)]
+    chunks = [sudoc_ids[i:i+chunk_size] for i in range(0, len(sudoc_ids), chunk_size)]
     i = 0
     for chunk in chunks:
         notices_json = []
