@@ -160,7 +160,7 @@ def set_source(notice_json: str, soup: object) -> str:
     return notice_json
 
 
-def parse(notice_id: str, notice_xml: str) -> str:
+def harvest(notice_id: str, notice_xml: str) -> str:
     soup = BeautifulSoup(notice_xml, 'lxml')
     notice_json = {
         'is_french': True,

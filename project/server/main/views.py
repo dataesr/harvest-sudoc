@@ -4,7 +4,7 @@ from flask import Blueprint, current_app, jsonify, render_template, request
 from rq import Connection, Queue
 
 from project.server.main.logger import get_logger
-from project.server.main.tasks import create_task_parse
+from project.server.main.tasks import create_task_harvest
 
 
 main_blueprint = Blueprint('main', __name__,)
@@ -17,15 +17,15 @@ def home():
     return render_template('main/home.html')
 
 
-@main_blueprint.route('/parse', methods=['POST'])
-def run_task_parse():
+@main_blueprint.route('/harvest', methods=['POST'])
+def run_task_harvest():
     args = request.get_json(force=True)
     notices_id = args.get('notices_id')
     logger.debug(args)
     if notices_id:
         with Connection(redis.from_url(current_app.config['REDIS_URL'])):
             q = Queue(REDIS_QUEUE, default_timeout=21600)
-            task = q.enqueue(create_task_parse, notices_id)
+            task = q.enqueue(create_task_harvest, notices_id)
         response_object = {
             'status': 'success',
             'data': {
