@@ -151,16 +151,19 @@ def set_source(notice_json: str, soup: object) -> str:
         publisher = ';'.join(publishers)
         if len(publisher) > 1:
             notice_json['source']['publisher'] = publisher
-        issn = soup.find('datafield', {'tag': '461'}).find('subfield', {'code': 'x'})
+        issn_parent = soup.find('datafield', {'tag': '461'})
+        issn = issn_parent.find('subfield', {'code': 'x'}) if issn_parent else None
         if issn:
             notice_json['source']['journal_issns'] = [issn.text]
-        source_title = soup.find('datafield', {'tag': '461'}).find('subfield', {'code': 't'})
+        source_field_parent = soup.find('datafield', {'tag': '461'})
+        source_title = source_field_parent.find('subfield', {'code': 't'}) if source_field_parent else None
         if source_title:
             notice_json['source']['source_title'] = source_title.text
     return notice_json
 
 
 def harvest(notice_id: str, notice_xml: str) -> str:
+    logger.debug(f'Harvest sudoc for notice id : {notice_id}')
     soup = BeautifulSoup(notice_xml, 'lxml')
     notice_json = {
         'is_french': True,

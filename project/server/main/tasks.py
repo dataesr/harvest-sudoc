@@ -25,8 +25,7 @@ def get_sudoc_ids(id_ref: str) -> list:
 
 
 def create_task_harvest(id_ref: str) -> None:
-    logger.debug(f'Create harvest task for id_ref : {id_ref}')
-    today = datetime.datetime.today().strftime('%Y/%m/%d')
+    today = datetime.datetime.today().strftime('%Y%m%d')
     sudoc_ids = get_sudoc_ids(id_ref=id_ref)
     chunk_size = 500
     chunks = [sudoc_ids[i:i+chunk_size] for i in range(0, len(sudoc_ids), chunk_size)]
@@ -34,13 +33,13 @@ def create_task_harvest(id_ref: str) -> None:
     for chunk in chunks:
         notices_json = []
         notices_xml = []
-        for notice_id in chunk:
-            notice_url = f'https://www.sudoc.fr/{notice_id}.xml'
+        for sudoc_id in chunk:
+            notice_url = f'https://www.sudoc.fr/{sudoc_id}.xml'
             notice_xml = requests.get(url=notice_url).text
-            notice_json = harvest(notice_id, notice_xml)
+            notice_json = harvest(sudoc_id, notice_xml)
             notices_json.append(notice_json)
             notices_xml.append({
-                'id': notice_id,
+                'id': sudoc_id,
                 'date': today,
                 'notice': notice_xml
             })
