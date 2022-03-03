@@ -1,4 +1,4 @@
-
+from bs4 import BeautifulSoup
 import datetime
 import requests
 
@@ -7,6 +7,12 @@ from project.server.main.logger import get_logger
 from project.server.main.utils_swift import set_objects
 
 logger = get_logger(__name__)
+
+
+def is_thesis(soup: object) -> bool:
+    parent = soup.find('datafield', {'tag': '328'})
+    thesis = parent.find('subfield', {'code': 'b'}) if parent else None
+    return thesis.text.lower() in ['thèse d\'exercice', 'thèse de doctorat'] if thesis else False
 
 
 def get_sudoc_ids(id_ref: str) -> list:
@@ -36,13 +42,15 @@ def create_task_harvest(id_ref: str) -> None:
         for sudoc_id in chunk:
             notice_url = f'https://www.sudoc.fr/{sudoc_id}.xml'
             notice_xml = requests.get(url=notice_url).text
-            notice_json = harvest(sudoc_id, notice_xml)
-            notices_json.append(notice_json)
-            notices_xml.append({
-                'id': sudoc_id,
-                'date': today,
-                'notice': notice_xml
-            })
+            soup = BeautifulSoup(notice_xml, 'lxml')
+            if not is_thesis(soup=soup):
+                notice_json = harvest(sudoc_id, soup)
+                notices_json.append(notice_json)
+                notices_xml.append({
+                    'id': sudoc_id,
+                    'date': today,
+                    'notice': notice_xml
+                })
         set_objects(all_objects=notices_json, container='sudoc', path=f'parsed/sudoc_{today}_{i}.jsonl.gz')
         set_objects(all_objects=notices_xml, container='sudoc', path=f'raw/sudoc_{today}_{i}.jsonl.gz')
         i += 1

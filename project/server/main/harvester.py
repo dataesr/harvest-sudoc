@@ -1,4 +1,3 @@
-from bs4 import BeautifulSoup
 import datetime
 import re
 
@@ -162,9 +161,8 @@ def set_source(notice_json: str, soup: object) -> str:
     return notice_json
 
 
-def harvest(notice_id: str, notice_xml: str) -> str:
+def harvest(notice_id: str, soup: object) -> str:
     logger.debug(f'Harvest sudoc for notice id : {notice_id}')
-    soup = BeautifulSoup(notice_xml, 'lxml')
     notice_json = {
         'is_french': True,
         'persons_identified': True,
