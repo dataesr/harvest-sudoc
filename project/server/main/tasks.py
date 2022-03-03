@@ -29,6 +29,6 @@ def create_task_harvest(notices_id: list) -> None:
                 'date': today,
                 'notice': notice_xml
             })
-        set_objects(all_objects=notices_json, container='sudoc', path='parsed/sudoc_{today}_{i}.jsonl.gz')
-        set_objects(all_objects=notices_xml, container='sudoc', path='raw/sudoc_{today}_{i}.jsonl.gz')
+        set_objects(all_objects=notices_json, container='sudoc', path=f'parsed/sudoc_{today}_{i}.jsonl.gz')
+        set_objects(all_objects=notices_xml, container='sudoc', path=f'raw/sudoc_{today}_{i}.jsonl.gz')
         i += 1
