@@ -16,7 +16,7 @@ def is_thesis(soup: object) -> bool:
 
 
 def get_sudoc_ids(id_ref: str) -> list:
-    logger.debug(f'Get all sudoc ids for person {id_ref}')
+    logger.debug(f'Get all sudoc ids for id_ref {id_ref}')
     sudoc_ids = []
     response = requests.get(f'https://www.idref.fr/services/biblio/{id_ref}.json').json()
     roles = response.get('sudoc', {}).get('result', {}).get('role', [])
@@ -30,9 +30,12 @@ def get_sudoc_ids(id_ref: str) -> list:
     return list(set(sudoc_ids))
 
 
-def create_task_harvest(id_ref: str) -> None:
+def create_task_harvest(id_refs: list) -> None:
     today = datetime.datetime.today().strftime('%Y%m%d')
-    sudoc_ids = get_sudoc_ids(id_ref=id_ref)
+    id_refs = id_refs if isinstance(id_refs, list) else [id_refs]
+    sudoc_ids = []
+    for id_ref in id_refs:
+        sudoc_ids.append(get_sudoc_ids(id_ref=id_ref))
     chunk_size = 500
     chunks = [sudoc_ids[i:i+chunk_size] for i in range(0, len(sudoc_ids), chunk_size)]
     i = 0
