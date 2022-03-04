@@ -13,6 +13,16 @@ install:
 	pip install -r requirements.txt
 	@echo End of dependencies installation
 
+start:
+	@echo Matcher starting...
+	docker-compose up --build
+	@echo Matcher started http://localhost:5004
+
+stop:
+	@echo Matcher stopping...
+	docker-compose down
+	@echo Matcher stopped
+
 docker-build:
 	@echo Building a new docker image
 	docker build -t ghcr.io/$(DOCKER_IMAGE_NAME):$(CURRENT_VERSION) -t ghcr.io/$(DOCKER_IMAGE_NAME):latest .
