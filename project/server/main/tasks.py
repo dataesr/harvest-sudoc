@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import datetime
+import pymongo
 import requests
 
 from project.server.main.harvester import harvest
@@ -31,11 +32,15 @@ def get_sudoc_ids(id_ref: str) -> list:
 
 
 def create_task_harvest(id_refs: list) -> None:
+    logger.debug(f'Task harvest for id_refs {id_refs}')
     today = datetime.datetime.today().strftime('%Y%m%d')
     id_refs = id_refs if isinstance(id_refs, list) else [id_refs]
+    mongo_client = pymongo.MongoClient('mongodb://mongo:27017/')
+    mongo_db = mongo_client['harvest']
+    mongo_collection = mongo_db['sudoc']
     sudoc_ids = []
     for id_ref in id_refs:
-        sudoc_ids.append(get_sudoc_ids(id_ref=id_ref))
+        sudoc_ids += get_sudoc_ids(id_ref=id_ref)
     chunk_size = 500
     chunks = [sudoc_ids[i:i+chunk_size] for i in range(0, len(sudoc_ids), chunk_size)]
     i = 0
@@ -43,17 +48,22 @@ def create_task_harvest(id_refs: list) -> None:
         notices_json = []
         notices_xml = []
         for sudoc_id in chunk:
-            notice_url = f'https://www.sudoc.fr/{sudoc_id}.xml'
-            notice_xml = requests.get(url=notice_url).text
-            soup = BeautifulSoup(notice_xml, 'lxml')
-            if not is_thesis(soup=soup):
-                notice_json = harvest(sudoc_id, soup)
-                notices_json.append(notice_json)
-                notices_xml.append({
-                    'id': sudoc_id,
-                    'date': today,
-                    'notice': notice_xml
-                })
+            count_docs = mongo_collection.count_documents({'sudoc_id': sudoc_id})
+            if count_docs == 0:
+                notice_url = f'https://www.sudoc.fr/{sudoc_id}.xml'
+                notice_xml = requests.get(url=notice_url).text
+                soup = BeautifulSoup(notice_xml, 'lxml')
+                if not is_thesis(soup=soup):
+                    notice_json = harvest(sudoc_id, soup)
+                    notices_json.append(notice_json)
+                    notices_xml.append({
+                        'id': sudoc_id,
+                        'date': today,
+                        'notice': notice_xml
+                    })
+                    mongo_collection.insert_one({'sudoc_id': sudoc_id})
+            else:
+                logger.debug(f'This sudoc_id is already harvested {sudoc_id}')
         set_objects(all_objects=notices_json, container='sudoc', path=f'parsed/sudoc_{today}_{i}.jsonl.gz')
         set_objects(all_objects=notices_xml, container='sudoc', path=f'raw/sudoc_{today}_{i}.jsonl.gz')
         i += 1

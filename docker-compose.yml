@@ -13,6 +13,15 @@ services:
       - harvest-sudoc-network
     depends_on:
       - redis
+  
+  mongo:
+    image: mongo:4.0.0
+    ports:
+      - 27017:27017
+    volumes:
+      - '/tmp/mongodb:/tmp/mongodb'
+    networks:
+      - harvest-sudoc-network
 
   worker:
     image: ghcr.io/dataesr/harvest-sudoc:0.0.0
@@ -28,6 +37,7 @@ services:
       - harvest-sudoc-network
     depends_on:
       - redis
+      - mongo
 
   web:
     build: .
