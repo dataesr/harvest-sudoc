@@ -30,3 +30,10 @@ Harvesting the sudoc
 | -------- | ------ | -------- | ----------- |
 | harvest  | POST   | id_refs [str, list]<br>force_download [bool] | This endpoint will download in ObjectStorage all the sudoc notices for the given id_refs given.<br>If `force_download` is set to `True`, the notice will be downloaded even if already in DB. |
 | harvest_notices | POST | sudoc_ids [str, list]<br>force_download [bool] | This endpoint will download in ObjectStorage all the sudoc notices<br>If `force_download` is set to `True`, the notice will be downloaded even if already in DB. |
+
+
+## Release
+To create a new release:
+```shell
+make release VERSION=X.X.X
+```
