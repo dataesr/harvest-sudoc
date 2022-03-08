@@ -20,12 +20,13 @@ def home():
 @main_blueprint.route('/harvest', methods=['POST'])
 def run_task_harvest():
     args = request.get_json(force=True)
-    id_refs = args.get('id_refs')
     logger.debug(args)
+    id_refs = args.get('id_refs')
+    force_download = args.get('force_download', False)
     if id_refs:
         with Connection(redis.from_url(current_app.config['REDIS_URL'])):
             q = Queue(REDIS_QUEUE, default_timeout=21600)
-            task = q.enqueue(create_task_harvest, id_refs)
+            task = q.enqueue(create_task_harvest, id_refs, force_download)
         response_object = {
             'status': 'success',
             'data': {

@@ -35,7 +35,7 @@ def get_sudoc_ids(id_ref: str) -> list:
     return list(set(sudoc_ids))
 
 
-def create_task_harvest(id_refs: list) -> None:
+def create_task_harvest(id_refs: list, force_download: bool = False) -> None:
     logger.debug(f'Task harvest for id_refs {id_refs}')
     id_refs = id_refs if isinstance(id_refs, list) else [id_refs]
     mongo_client = pymongo.MongoClient(MONGO_HOST)
@@ -52,7 +52,7 @@ def create_task_harvest(id_refs: list) -> None:
         notices_json = []
         ids_already_harvested = list(mongo_collection.find({'sudoc_id': {'$in': chunk}}))
         for sudoc_id in chunk:
-            if sudoc_id not in ids_already_harvested:
+            if force_download or sudoc_id not in ids_already_harvested:
                 notice_url = f'https://www.sudoc.fr/{sudoc_id}.xml'
                 notice_xml = requests.get(url=notice_url).text
                 soup = BeautifulSoup(notice_xml, 'lxml')
