@@ -1,5 +1,6 @@
 from bs4 import BeautifulSoup
 import json
+import os
 import pymongo
 import requests
 
@@ -42,6 +43,7 @@ def create_task_harvest(id_refs: list, force_download: bool = False) -> None:
     mongo_db = mongo_client[MONGO_DB]
     mongo_collection = mongo_db[MONGO_COLLECTION]
     sudoc_ids = []
+    json_file = 'data_output.json'
     for id_ref in id_refs:
         sudoc_ids += get_sudoc_ids(id_ref=id_ref)
     sudoc_ids = list(set(sudoc_ids))
@@ -64,6 +66,9 @@ def create_task_harvest(id_refs: list, force_download: bool = False) -> None:
                     set_objects(all_objects=notice_xml.encode('utf8'), container='sudoc', path=f'raw/{sudoc_id}.xml')
             else:
                 logger.debug(f'This sudoc_id is already harvested {sudoc_id}')
-        mongoimport = f'mongoimport --numInsertionWorkers 2 --uri {MONGO_HOST}{MONGO_DB} --collection {MONGO_COLLECTION} --file {notices_json} --jsonArray'
-        logger.debug(mongoimport)
+        with open(json_file, 'w') as file:
+            json.dump(notices_json, file)
+        mongoimport = f'mongoimport --numInsertionWorkers 2 --uri {MONGO_HOST}{MONGO_DB} -c {MONGO_COLLECTION} --file {json_file} --jsonArray'
+        os.system(mongoimport)
         i += 1
+    os.remove(json_file)

@@ -17,6 +17,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python3-setuptools \
     g++ \
     python3-dev \
+    mongodb-org \
     && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
