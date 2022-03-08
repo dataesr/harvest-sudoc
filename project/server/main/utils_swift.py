@@ -1,11 +1,10 @@
-import gzip
 import hashlib
 import os
 import pandas as pd
 import swiftclient
 from retry import retry
 
-from io import BytesIO, TextIOWrapper
+from io import BytesIO
 
 from project.server.main.logger import get_logger
 
@@ -77,14 +76,7 @@ def get_objects(container, path):
 @retry(delay=2, tries=50)
 def set_objects(all_objects, container, path):
     logger.debug(f'Setting object {container} {path}')
-    if isinstance(all_objects, list):
-        all_notices_content = pd.DataFrame(all_objects)
-    else:
-        all_notices_content = all_objects
-    gz_buffer = BytesIO()
-    with gzip.GzipFile(mode='w', fileobj=gz_buffer) as gz_file:
-        all_notices_content.to_json(TextIOWrapper(gz_file, 'utf8'), orient='records')
-    conn.put_object(container, path, contents=gz_buffer.getvalue())
+    conn.put_object(container, path, contents=all_objects, headers={})
     logger.debug('Done')
     return
 
