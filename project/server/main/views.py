@@ -4,7 +4,7 @@ from flask import Blueprint, current_app, jsonify, render_template, request
 from rq import Connection, Queue
 
 from project.server.main.logger import get_logger
-from project.server.main.tasks import create_task_harvest
+from project.server.main.tasks import create_task_harvest, create_task_harvest_notices
 
 
 main_blueprint = Blueprint('main', __name__,)
@@ -38,6 +38,31 @@ def run_task_harvest():
         response_object = {
             'status': 'error',
             'message': 'Missing "id_refs" argument'
+        }
+    return jsonify(response_object)
+
+
+@main_blueprint.route('/harvest_notices', methods=['POST'])
+def run_task_harvest_notices():
+    args = request.get_json(force=True)
+    logger.debug(args)
+    sudoc_ids = args.get('sudoc_ids')
+    force_download = args.get('force_download', False)
+    if sudoc_ids:
+        with Connection(redis.from_url(current_app.config['REDIS_URL'])):
+            q = Queue(REDIS_QUEUE, default_timeout=21600)
+            task = q.enqueue(create_task_harvest_notices, sudoc_ids, force_download)
+        response_object = {
+            'status': 'success',
+            'data': {
+                'task_id': task.get_id()
+            }
+        }
+    else:
+        logger.error('Missing "sudoc_ids" argument in the "/harvest_notices" request')
+        response_object = {
+            'status': 'error',
+            'message': 'Missing "sudoc_ids" argument'
         }
     return jsonify(response_object)
 

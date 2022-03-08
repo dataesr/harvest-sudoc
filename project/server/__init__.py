@@ -16,7 +16,7 @@ def create_app():
         template_folder='../client/templates',
         static_folder='../client/static'
     )
-    app_settings = os.getenv("APP_SETTINGS")
+    app_settings = os.getenv('APP_SETTINGS')
     app.config.from_object(app_settings)
     app.json_encoder = CustomJSONEncoder
     bootstrap.init_app(app)

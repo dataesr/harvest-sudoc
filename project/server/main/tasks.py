@@ -36,17 +36,14 @@ def get_sudoc_ids(id_ref: str) -> list:
     return list(set(sudoc_ids))
 
 
-def create_task_harvest(id_refs: list, force_download: bool = False) -> None:
-    logger.debug(f'Task harvest for id_refs {id_refs}')
-    id_refs = id_refs if isinstance(id_refs, list) else [id_refs]
+def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False) -> None:
+    logger.debug(f'Task harvest notices for sudoc_ids {sudoc_ids}')
+    sudoc_ids = sudoc_ids if isinstance(sudoc_ids, list) else list(sudoc_ids)
+    sudoc_ids = list(set(sudoc_ids))
     mongo_client = pymongo.MongoClient(MONGO_HOST)
     mongo_db = mongo_client[MONGO_DB]
     mongo_collection = mongo_db[MONGO_COLLECTION]
-    sudoc_ids = []
     json_file = 'data_output.json'
-    for id_ref in id_refs:
-        sudoc_ids += get_sudoc_ids(id_ref=id_ref)
-    sudoc_ids = list(set(sudoc_ids))
     chunk_size = 500
     chunks = [sudoc_ids[i:i+chunk_size] for i in range(0, len(sudoc_ids), chunk_size)]
     i = 0
@@ -72,3 +69,13 @@ def create_task_harvest(id_refs: list, force_download: bool = False) -> None:
         os.system(mongoimport)
         i += 1
     os.remove(json_file)
+
+
+def create_task_harvest(id_refs: list, force_download: bool = False) -> None:
+    logger.debug(f'Task harvest for id_refs {id_refs}')
+    id_refs = id_refs if isinstance(id_refs, list) else list(id_refs)
+    id_refs = list(set(id_refs))
+    sudoc_ids = []
+    for id_ref in id_refs:
+        sudoc_ids += get_sudoc_ids(id_ref=id_ref)
+    create_task_harvest_notices(sudoc_ids, force_download)
