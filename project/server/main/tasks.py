@@ -18,7 +18,7 @@ MONGO_COLLECTION = 'sudoc'
 def is_thesis(soup: object) -> bool:
     parent = soup.find('datafield', {'tag': '328'})
     thesis = parent.find('subfield', {'code': 'b'}) if parent else None
-    return thesis.text.lower() in ['thèse d\'exercice', 'thèse de doctorat'] if thesis else False
+    return thesis and thesis.text.lower() == 'thèse de doctorat'
 
 
 def get_sudoc_ids(id_ref: str) -> list:
@@ -46,7 +46,6 @@ def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False) -
     json_file = 'data_output.json'
     chunk_size = 500
     chunks = [sudoc_ids[i:i+chunk_size] for i in range(0, len(sudoc_ids), chunk_size)]
-    i = 0
     for chunk in chunks:
         notices_json = []
         ids_already_harvested = list(mongo_collection.find({'sudoc_id': {'$in': chunk}}))
@@ -67,7 +66,6 @@ def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False) -
             json.dump(notices_json, file)
         mongoimport = f'mongoimport --numInsertionWorkers 2 --uri {MONGO_HOST}{MONGO_DB} -c {MONGO_COLLECTION} --file {json_file} --jsonArray'
         os.system(mongoimport)
-        i += 1
     os.remove(json_file)
 
 
