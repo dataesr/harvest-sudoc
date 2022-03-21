@@ -165,9 +165,11 @@ def set_source(notice_json: str, soup: object) -> str:
 def harvest(notice_id: str, soup: object) -> str:
     logger.debug(f'Harvest sudoc for notice id : {notice_id}')
     notice_json = {
-        'sudoc_id': notice_id,
-        'detected_countries': ['fr'],
-        'data_sources': ['sudoc']
+        'is_french': True,
+        'persons_identified': True,
+        'structures_identified': True,
+        'data_sources': ['sudoc'],
+        'sudoc_id': notice_id
     }
     notice_json = set_doi(notice_json, soup, notice_id)
     notice_json = set_genre(notice_json, soup)
