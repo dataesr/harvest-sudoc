@@ -13,7 +13,9 @@ logger = get_logger(__name__)
 MONGO_HOST = 'mongodb://mongo:27017/'
 MONGO_DB = 'harvest'
 MONGO_COLLECTION = 'sudoc'
-
+#mongo_client = pymongo.MongoClient(MONGO_HOST)
+#mongo_db = mongo_client[MONGO_DB]
+#mongo_collection = mongo_db[MONGO_COLLECTION]
 
 def is_thesis(soup: object) -> bool:
     parent = soup.find('datafield', {'tag': '328'})
@@ -43,12 +45,13 @@ def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False) -
     mongo_client = pymongo.MongoClient(MONGO_HOST)
     mongo_db = mongo_client[MONGO_DB]
     mongo_collection = mongo_db[MONGO_COLLECTION]
+    mongo_collection.create_index('sudoc_id')
     json_file = 'data_output.json'
     chunk_size = 500
     chunks = [sudoc_ids[i:i+chunk_size] for i in range(0, len(sudoc_ids), chunk_size)]
     for chunk in chunks:
         notices_json = []
-        ids_already_harvested = list(mongo_collection.find({'sudoc_id': {'$in': chunk}}))
+        ids_already_harvested = [k.get('sudoc_id') for k in list(mongo_collection.find({'sudoc_id': {'$in': chunk}}))]
         for sudoc_id in chunk:
             if force_download or sudoc_id not in ids_already_harvested:
                 notice_url = f'https://www.sudoc.fr/{sudoc_id}.xml'
@@ -62,11 +65,12 @@ def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False) -
                     set_objects(all_objects=notice_xml.encode('utf8'), container='sudoc', path=f'raw/{sudoc_id}.xml')
             else:
                 logger.debug(f'This sudoc_id is already harvested {sudoc_id}')
-        with open(json_file, 'w') as file:
-            json.dump(notices_json, file)
-        mongoimport = f'mongoimport --numInsertionWorkers 2 --uri {MONGO_HOST}{MONGO_DB} -c {MONGO_COLLECTION} --file {json_file} --jsonArray'
-        os.system(mongoimport)
-    os.remove(json_file)
+        if notices_json:
+            with open(json_file, 'w') as file:
+                json.dump([{'sudoc_id': n['sudoc_id']} for n in notices_json], file)
+            mongoimport = f'mongoimport --numInsertionWorkers 2 --uri {MONGO_HOST}{MONGO_DB} -c {MONGO_COLLECTION} --file {json_file} --jsonArray'
+            os.system(mongoimport)
+            os.remove(json_file)
 
 
 def create_task_harvest(id_refs: list, force_download: bool = False) -> None:
