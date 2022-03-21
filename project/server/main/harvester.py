@@ -51,6 +51,7 @@ def set_publication_date(notice_json: str, soup: object) -> str:
                 publication_date_info = publication_date_info[0:8]
                 publication_date = f'{publication_date_info[0:4]}-{publication_date_info[4:6]}-{publication_date_info[6:8]}'
         if publication_date:
+            publication_date = publication_date.replace('X', '0').replace('.', '0')
             notice_json['publication_date'] = datetime.datetime.strptime(publication_date, '%Y-%m-%d').isoformat()
             break
     return notice_json

@@ -38,7 +38,7 @@ def get_sudoc_ids(id_ref: str) -> list:
 
 def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False) -> None:
     logger.debug(f'Task harvest notices for sudoc_ids {sudoc_ids}')
-    sudoc_ids = sudoc_ids if isinstance(sudoc_ids, list) else list(sudoc_ids)
+    sudoc_ids = sudoc_ids if isinstance(sudoc_ids, list) else [sudoc_ids]
     sudoc_ids = list(set(sudoc_ids))
     mongo_client = pymongo.MongoClient(MONGO_HOST)
     mongo_db = mongo_client[MONGO_DB]
@@ -71,7 +71,7 @@ def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False) -
 
 def create_task_harvest(id_refs: list, force_download: bool = False) -> None:
     logger.debug(f'Task harvest for id_refs {id_refs}')
-    id_refs = id_refs if isinstance(id_refs, list) else list(id_refs)
+    id_refs = id_refs if isinstance(id_refs, list) else [id_refs]
     id_refs = list(set(id_refs))
     sudoc_ids = []
     for id_ref in id_refs:
