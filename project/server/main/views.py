@@ -25,7 +25,7 @@ def run_task_harvest():
     force_download = args.get('force_download', False)
     if id_refs:
         with Connection(redis.from_url(current_app.config['REDIS_URL'])):
-            q = Queue(REDIS_QUEUE, default_timeout=21600)
+            q = Queue(REDIS_QUEUE, default_timeout=2160000)
             task = q.enqueue(create_task_harvest, id_refs, force_download)
         response_object = {
             'status': 'success',
