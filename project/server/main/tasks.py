@@ -59,8 +59,8 @@ def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False) -
                     notice_json = harvest(sudoc_id, soup)
                     notices_json.append(notice_json)
                     json_content = json.dumps(notice_json, indent=4, ensure_ascii=False).encode('utf8')
-                    set_objects(all_objects=json_content, container='sudoc', path=f'parsed/{sudoc_id}.json')
-                    set_objects(all_objects=notice_xml.encode('utf8'), container='sudoc', path=f'raw/{sudoc_id}.xml')
+                    set_objects(all_objects=json_content, container='sudoc', path=f'parsed/{sudoc_id[-2:]}/{sudoc_id}.json')
+                    set_objects(all_objects=notice_xml.encode('utf8'), container='sudoc', path=f'raw/{sudoc_id[-2:]}/{sudoc_id}.xml')
             else:
                 logger.debug(f'This sudoc_id is already harvested {sudoc_id}')
         if notices_json:
