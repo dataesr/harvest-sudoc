@@ -13,9 +13,7 @@ logger = get_logger(__name__)
 MONGO_HOST = 'mongodb://mongo:27017/'
 MONGO_DB = 'harvest'
 MONGO_COLLECTION = 'sudoc'
-#mongo_client = pymongo.MongoClient(MONGO_HOST)
-#mongo_db = mongo_client[MONGO_DB]
-#mongo_collection = mongo_db[MONGO_COLLECTION]
+
 
 def is_thesis(soup: object) -> bool:
     parent = soup.find('datafield', {'tag': '328'})

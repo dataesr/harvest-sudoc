@@ -29,8 +29,13 @@ def set_genre(notice_json: str, soup: object) -> str:
         'b': 'multimedia',
         'z': 'multimedia'
     }
-    genre = soup.find('controlfield', {'tag': '008'})
-    genre = genres.get(genre.text.lower()[0], 'book') if genre else 'other'
+    thesis_parent = soup.find('datafield', {'tag': '328'})
+    thesis = thesis_parent.find('subfield', {'code': 'b'}) if thesis_parent else None
+    if thesis and thesis.text.lower() == "thèse d'exercice":
+        genre = 'exercice_thesis'
+    else:
+        genre = soup.find('controlfield', {'tag': '008'})
+        genre = genres.get(genre.text.lower()[0], 'book') if genre else 'other'
     notice_json['genre'] = genre
     return notice_json
 
