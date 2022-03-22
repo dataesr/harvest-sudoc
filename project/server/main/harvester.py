@@ -36,24 +36,14 @@ def set_genre(notice_json: str, soup: object) -> str:
 
 
 def set_publication_date(notice_json: str, soup: object) -> str:
-    attributes = [{'tag': '210', 'code': 'd'}, {'tag': '100', 'code': 'a'}, {'tag': '940', 'code': 'a'},
-                  {'tag': '033', 'code': 'd'}]
-    for attribute in attributes:
-        publication_date = None
-        d = soup.find('datafield', {'tag': attribute.get('tag')})
-        if d and d.find('subfield', {'code': attribute.get('code')}):
-            publication_date_info = d.find('subfield', {'code': attribute.get('code')}).text.replace('impr. ', '').replace('-', ' ').replace(',', '')
-            for s in publication_date_info.split(' '):
-                if len(s) == 4 and s.startswith(('1', '2')):
-                    publication_date = f'{s}-01-01'
-                    break
-            if publication_date is None and len(publication_date_info) >= 8 and publication_date_info.startswith(('1', '2')):
-                publication_date_info = publication_date_info[0:8]
-                publication_date = f'{publication_date_info[0:4]}-{publication_date_info[4:6]}-{publication_date_info[6:8]}'
-        if publication_date:
-            publication_date = publication_date.replace('X', '0').replace('.', '0').replace('?', '0')
-            notice_json['publication_date'] = datetime.datetime.strptime(publication_date, '%Y-%m-%d').isoformat()
-            break
+    try:
+        publication_date = soup.find('datafield', {'tag': '100'}).find('subfield', {'code': 'a'}).text
+        publication_date = publication_date[:8]
+        publication_date = datetime.datetime.strptime(publication_date, '%Y%m%d').isoformat()
+    except:
+        logger.error('Error while retrieving publication date')
+        publication_date = datetime.datetime(1, 1, 1, 0, 0).isoformat()
+    notice_json['publication_date'] = publication_date
     return notice_json
 
 
