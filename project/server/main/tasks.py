@@ -24,7 +24,12 @@ def is_thesis(soup: object) -> bool:
 def get_sudoc_ids(id_ref: str) -> list:
     logger.debug(f'Get all sudoc ids for id_ref {id_ref}')
     sudoc_ids = []
-    response = requests.get(f'https://www.idref.fr/services/biblio/{id_ref}.json').json()
+    url = f'https://www.idref.fr/services/biblio/{id_ref}.json'
+    try:
+        response = requests.get(url).json()
+    except:
+        logger.debug(f'erreur avec la requete {url}')
+        return []
     roles = response.get('sudoc', {}).get('result', {}).get('role', [])
     roles = roles if isinstance(roles, list) else [roles]
     for role in roles:
