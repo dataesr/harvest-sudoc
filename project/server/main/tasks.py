@@ -18,13 +18,31 @@ MONGO_COLLECTION = 'sudoc'
 def is_thesis(soup: object) -> bool:
     parent = soup.find('datafield', {'tag': '328'})
     thesis = parent.find('subfield', {'code': 'b'}) if parent else None
-    return thesis and thesis.text.lower() == 'thèse de doctorat'
+    comment = parent.find('subfield', {'code': 'z'}) if parent else None
+    return thesis and (thesis.text.lower() == 'thèse de doctorat') and (comment is None)
 
 
-def get_sudoc_ids(id_ref: str) -> list:
-    logger.debug(f'Get all sudoc ids for id_ref {id_ref}')
+def get_sudoc_ids(idref):
+    logger.debug(f'Get all sudoc ids for idref {idref}')
     sudoc_ids = []
-    url = f'https://www.idref.fr/services/biblio/{id_ref}.json'
+    url = f'https://www.sudoc.fr/services/generic/?servicekey=qualinca_nbs_cache&ppn={idref}&format=application/xml'
+    try:
+        xml = requests.get(url).text
+    except:
+        logger.debug(f'erreur avec la requete {url}')
+        return []
+    soup = BeautifulSoup(xml, 'lxml')
+    for n in soup.find_all('o_noticebiblio'):
+        ppn = n.find('ppn')
+        if ppn:
+            sudoc_ids.append(ppn.text)
+    return sudoc_ids
+
+
+def get_sudoc_ids_old(idref: str) -> list:
+    logger.debug(f'Get all sudoc ids for idref {idref}')
+    sudoc_ids = []
+    url = f'https://www.idref.fr/services/biblio/{idref}.json'
     try:
         response = requests.get(url).json()
     except:
@@ -60,12 +78,12 @@ def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False) -
                 notice_url = f'https://www.sudoc.fr/{sudoc_id}.xml'
                 notice_xml = requests.get(url=notice_url).text
                 soup = BeautifulSoup(notice_xml, 'lxml')
+                set_objects(all_objects=notice_xml.encode('utf8'), container='sudoc', path=f'raw/{sudoc_id[-2:]}/{sudoc_id}.xml')
                 if not is_thesis(soup=soup):
                     notice_json = harvest(sudoc_id, soup)
                     notices_json.append(notice_json)
                     json_content = json.dumps(notice_json, indent=4, ensure_ascii=False).encode('utf8')
                     set_objects(all_objects=json_content, container='sudoc', path=f'parsed/{sudoc_id[-2:]}/{sudoc_id}.json')
-                    set_objects(all_objects=notice_xml.encode('utf8'), container='sudoc', path=f'raw/{sudoc_id[-2:]}/{sudoc_id}.xml')
             else:
                 logger.debug(f'This sudoc_id is already harvested {sudoc_id}')
         if notices_json:
@@ -76,11 +94,11 @@ def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False) -
             os.remove(json_file)
 
 
-def create_task_harvest(id_refs: list, force_download: bool = False) -> None:
-    logger.debug(f'Task harvest for id_refs {id_refs}')
-    id_refs = id_refs if isinstance(id_refs, list) else [id_refs]
-    id_refs = list(set(id_refs))
+def create_task_harvest(idrefs: list, force_download: bool = False) -> None:
+    logger.debug(f'Task harvest for idrefs {idrefs}')
+    idrefs = idrefs if isinstance(idrefs, list) else [idrefs]
+    idrefs = list(set(idrefs))
     sudoc_ids = []
-    for id_ref in id_refs:
-        sudoc_ids += get_sudoc_ids(id_ref=id_ref)
+    for idref in idrefs:
+        sudoc_ids += get_sudoc_ids(idref=idref)
     create_task_harvest_notices(sudoc_ids, force_download)

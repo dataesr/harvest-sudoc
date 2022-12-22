@@ -21,12 +21,12 @@ def home():
 def run_task_harvest():
     args = request.get_json(force=True)
     logger.debug(args)
-    id_refs = args.get('id_refs')
+    idrefs = args.get('idrefs')
     force_download = args.get('force_download', False)
-    if id_refs:
+    if idrefs:
         with Connection(redis.from_url(current_app.config['REDIS_URL'])):
             q = Queue(REDIS_QUEUE, default_timeout=2160000)
-            task = q.enqueue(create_task_harvest, id_refs, force_download)
+            task = q.enqueue(create_task_harvest, idrefs, force_download)
         response_object = {
             'status': 'success',
             'data': {
@@ -34,20 +34,20 @@ def run_task_harvest():
             }
         }
     else:
-        logger.error('Missing "id_refs" argument in the "/harvest" request')
+        logger.error('Missing "idrefs" argument in the "/harvest" request')
         response_object = {
             'status': 'error',
-            'message': 'Missing "id_refs" argument'
+            'message': 'Missing "idrefs" argument'
         }
     return jsonify(response_object)
 
 
 @main_blueprint.route('/harvest_notices', methods=['POST'])
 def run_task_harvest_notices():
-    args = request.get_json(force=True)
+    args = request.get_json(force=False)
     logger.debug(args)
     sudoc_ids = args.get('sudoc_ids')
-    force_download = args.get('force_download', False)
+    force_download = args.get('force_download', True)
     if sudoc_ids:
         with Connection(redis.from_url(current_app.config['REDIS_URL'])):
             q = Queue(REDIS_QUEUE, default_timeout=21600)

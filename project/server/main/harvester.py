@@ -45,11 +45,11 @@ def set_publication_date(notice_json: str, soup: object) -> str:
         publication_date = soup.find('datafield', {'tag': '100'}).find('subfield', {'code': 'a'}).text
         #publication_date = publication_date[:8]
         #publication_date = datetime.datetime.strptime(publication_date, '%Y%m%d').isoformat()
-        publication_year = publication_date.split(' ')[0][-4:]
+        publication_year = publication_date[9:13]
         publication_date = datetime.datetime.strptime(f'{publication_year}0101', '%Y%m%d').isoformat()
     except:
         logger.error('Error while retrieving publication date')
-        publication_date = datetime.datetime(1, 1, 1, 0, 0).isoformat()
+        publication_date = datetime.datetime(1900, 1, 1, 0, 0).isoformat()
     notice_json['publication_date'] = publication_date
     return notice_json
 
@@ -137,6 +137,13 @@ def set_summary(notice_json: str, soup: object) -> str:
         notice_json['summary'] = summary.text
     return notice_json
 
+def set_publisher(notice_json: str, soup: object) -> str:
+    d = soup.find('datafield', {'tag': '214'})
+    publisher = d.find('subfield', {'code': 'c'}) if d else None
+    if publisher:
+        notice_json['publisher'] = publisher.text
+    return notice_json
+
 
 def set_source(notice_json: str, soup: object) -> str:
     notice_json['source'] = {}
@@ -170,6 +177,7 @@ def harvest(notice_id: str, soup: object) -> str:
     notice_json = set_genre(notice_json, soup)
     notice_json = set_publication_date(notice_json, soup)
     notice_json = set_title(notice_json, soup)
+    notice_json = set_publisher(notice_json, soup)
     notice_json = set_authors(notice_json, soup)
     notice_json = set_id_external(notice_json, soup, notice_id)
     notice_json = set_thematics(notice_json, soup)
