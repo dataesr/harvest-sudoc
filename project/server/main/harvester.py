@@ -43,8 +43,10 @@ def set_genre(notice_json: str, soup: object) -> str:
 def set_publication_date(notice_json: str, soup: object) -> str:
     try:
         publication_date = soup.find('datafield', {'tag': '100'}).find('subfield', {'code': 'a'}).text
-        publication_date = publication_date[:8]
-        publication_date = datetime.datetime.strptime(publication_date, '%Y%m%d').isoformat()
+        #publication_date = publication_date[:8]
+        #publication_date = datetime.datetime.strptime(publication_date, '%Y%m%d').isoformat()
+        publication_year = publication_date.split(' ')[0][-4:]
+        publication_date = datetime.datetime.strptime(f'{publication_year}0101', '%Y%m%d').isoformat()
     except:
         logger.error('Error while retrieving publication date')
         publication_date = datetime.datetime(1, 1, 1, 0, 0).isoformat()
