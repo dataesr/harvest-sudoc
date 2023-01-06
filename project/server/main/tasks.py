@@ -25,17 +25,24 @@ def is_thesis(soup: object) -> bool:
 def get_sudoc_ids(idref):
     logger.debug(f'Get all sudoc ids for idref {idref}')
     sudoc_ids = []
-    url = f'https://www.sudoc.fr/services/generic/?servicekey=qualinca_nbs_cache&ppn={idref}&format=application/xml'
+    #url = f'https://www.sudoc.fr/services/generic/?servicekey=qualinca_nbs_cache&ppn={idref}&format=application/xml'
+    url = f'https://www.idref.fr/Proxy?https://data.idref.fr/sparql?default-graph-uri=&query=select+distinct%28%3Fdoc%29%2C+%3Fcitation%0D%0Awhere%0D%0A%7B%3Fdoc+%3Frel+%3Chttp%3A%2F%2Fwww.idref.fr%2F{idref}%2Fid%3E.%0D%0A%3Fdoc+a+%3Ftype+%3B+dcterms%3AbibliographicCitation+%3Fcitation.%0D%0AFILTER%28regex%28%3Fdoc%2C%27http%3A%2F%2Fwww.sudoc%27%29%29%0D%0AOPTIONAL+%7B%3Fdoc+dc%3Adate+%3FdatePub%7D.%0D%0A%0D%0A%7D%0D%0AORDER+by+desc%28%3FdatePub%29+&format=application%2Frdf%2Bxml&timeout=0&debug=on&run=+Run+Query+'
     try:
         xml = requests.get(url).text
     except:
         logger.debug(f'erreur avec la requete {url}')
         return []
     soup = BeautifulSoup(xml, 'lxml')
-    for n in soup.find_all('o_noticebiblio'):
-        ppn = n.find('ppn')
-        if ppn:
-            sudoc_ids.append(ppn.text)
+    #for n in soup.find_all('o_noticebiblio'):
+    #    ppn = n.find('ppn')
+    #    if ppn:
+    #        sudoc_ids.append(ppn.text)
+    for res in soup.find_all('res:value'):
+        try:
+            if 'sudoc.fr' in res.attrs['rdf:resource']:
+                sudoc_ids.append(res.attrs['rdf:resource'].split('/')[3])
+        except:
+            pass
     return sudoc_ids
 
 
