@@ -5,6 +5,51 @@ from project.server.main.logger import get_logger
 
 logger = get_logger(__name__)
 
+#https://abes.fr/wp-content/uploads/2020/04/format-d-echange-des-donnees-bibliographiques.pdf
+
+
+def is_thesis(soup):
+    thesis_elt = soup.find('datafield', {'tag': '029'})
+    if thesis_elt:
+        thesis_sub_elt = thesis_elt.find('subfield', {'code': 'b'})
+        if thesis_sub_elt:
+            logger.debug(f'thesis {thesis_sub_elt}')
+            return True
+    return False
+
+def is_not_text(soup):
+#https://documentation.abes.fr/sudoc/formats/unmb/DonneesCodees/Correspondance_008_UNM_USM.htm
+    genre_elt = soup.find('controlfield', {'tag': '008'})
+    if genre_elt:
+        genre = genre_elt.get_text()
+        if genre[0:1] in ['B', 'G', 'I', 'K', 'L', 'M', 'N', 'P', 'V', 'Z']:
+            logger.debug(f'controlfield 008 {genre}')
+            return True
+    for f in ['110', '115', '116', '117', '120', '121',
+              '123', '124', '125', '126', '127', '128',
+              '129']:
+        if soup.find('datafield', {'tag': f}):
+            logger.debug(f'datafield {f}')
+            return True
+    return False
+
+def is_re_edition(soup):
+    edition_elt = soup.find('datafield', {'tag': '205'})
+    if edition_elt and edition_elt.find('subfield', {'code': 'a'}):
+        edition_txt = edition_elt.find('subfield', {'code': 'a'}).get_text().lower()
+        if ('ed' in edition_txt) or ('éd' in edition_txt):
+            logger.debug(f're-edition: {edition_txt}')
+            return True
+    return False
+
+def filter_notice(soup):
+    if is_re_edition(soup):
+        return True
+    if is_not_text(soup):
+        return True
+    if is_thesis(soup):
+        return True
+    return False
 
 def set_doi(notice_json: str, soup: object, notice_id: str) -> str:
     doi = None
@@ -24,19 +69,8 @@ def set_doi(notice_json: str, soup: object, notice_id: str) -> str:
 
 
 def set_genre(notice_json: str, soup: object) -> str:
-    genres = {
-        'k': 'map',
-        'b': 'multimedia',
-        'z': 'multimedia'
-    }
-    thesis_parent = soup.find('datafield', {'tag': '328'})
-    thesis = thesis_parent.find('subfield', {'code': 'b'}) if thesis_parent else None
-    if thesis and thesis.text.lower() == "thèse d'exercice":
-        genre = 'exercice_thesis'
-    else:
-        genre = soup.find('controlfield', {'tag': '008'})
-        genre = genres.get(genre.text.lower()[0], 'book') if genre else 'other'
-    notice_json['genre'] = genre
+    #genre_elt = soup.find('controlfield', {'tag': '008'})
+    notice_json['genre'] = 'book'
     return notice_json
 
 
@@ -166,8 +200,8 @@ def set_source(notice_json: str, soup: object) -> str:
     return notice_json
 
 
-def harvest(notice_id: str, soup: object) -> str:
-    logger.debug(f'Harvest sudoc for notice id : {notice_id}')
+def parse(notice_id: str, soup: object) -> str:
+    logger.debug(f'Parsing sudoc notice id : {notice_id}')
     notice_json = {
         'sudoc_id': notice_id,
         'detected_countries': ['fr'],

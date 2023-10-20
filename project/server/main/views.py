@@ -23,10 +23,11 @@ def run_task_harvest():
     logger.debug(args)
     idrefs = args.get('idrefs')
     force_download = args.get('force_download', False)
+    force_parsing = args.get('force_parsing', True)
     if idrefs:
         with Connection(redis.from_url(current_app.config['REDIS_URL'])):
             q = Queue(REDIS_QUEUE, default_timeout=2160000)
-            task = q.enqueue(create_task_harvest, idrefs, force_download)
+            task = q.enqueue(create_task_harvest, idrefs, force_download, force_parsing)
         response_object = {
             'status': 'success',
             'data': {
@@ -47,11 +48,12 @@ def run_task_harvest_notices():
     args = request.get_json(force=False)
     logger.debug(args)
     sudoc_ids = args.get('sudoc_ids')
-    force_download = args.get('force_download', True)
+    force_download = args.get('force_download', False)
+    force_parsing = args.get('force_parsing', True)
     if sudoc_ids:
         with Connection(redis.from_url(current_app.config['REDIS_URL'])):
             q = Queue(REDIS_QUEUE, default_timeout=21600)
-            task = q.enqueue(create_task_harvest_notices, sudoc_ids, force_download)
+            task = q.enqueue(create_task_harvest_notices, sudoc_ids, force_download, force_parsing)
         response_object = {
             'status': 'success',
             'data': {

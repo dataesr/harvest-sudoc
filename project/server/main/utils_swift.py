@@ -3,6 +3,7 @@ import os
 import pandas as pd
 import swiftclient
 from retry import retry
+import subprocess
 
 from io import BytesIO
 
@@ -14,6 +15,15 @@ user = f'{os.getenv("OS_TENANT_NAME")}:{os.getenv("OS_USERNAME")}'
 key = os.getenv('OS_PASSWORD')
 project_id = os.getenv('OS_TENANT_ID')
 project_name = os.getenv('OS_PROJECT_NAME')
+
+init_cmd = f"swift --os-auth-url https://auth.cloud.ovh.net/v3 --auth-version 3 \
+      --key {key}\
+      --user {user} \
+      --os-user-domain-name Default \
+      --os-project-domain-name Default \
+      --os-project-id {project_id} \
+      --os-project-name {project_name} \
+      --os-region-name GRA"
 
 conn = swiftclient.Connection(
     authurl='https://auth.cloud.ovh.net/v3',
@@ -87,3 +97,28 @@ def delete_folder(cont_name, folder):
     for n in [e['name'] for e in cont[1] if folder in e['name']]:
         print(n)
         conn.delete_object(cont_name, n)
+
+@retry(delay=3, tries=50, backoff=2)
+def upload_object(container: str, filename: str, destination: str) -> str:
+    if destination is None:
+        destination = filename.split('/')[-1]
+    logger.debug(f'Uploading {filename} in {container} as {destination}')
+    cmd = init_cmd + f' upload {container} {filename} --object-name {destination}' \
+                     f' --segment-size 1048576000 --segment-threads 100'
+    #os.system(cmd)
+    r = subprocess.check_output(cmd, shell=True)
+    return f'https://storage.gra.cloud.ovh.net/v1/AUTH_{project_id}/{container}/{destination}'
+
+
+@retry(delay=3, tries=50, backoff=2)
+def download_object(container: str, filename: str, out: str) -> None:
+    logger.debug(f'Downloading {filename} from {container} to {out}')
+    cmd = init_cmd + f' download {container} {filename} -o {out}'
+    #os.system(cmd)
+    r = subprocess.check_output(cmd, shell=True)
+
+def delete_object(container: str, filename: str) -> None:
+    logger.debug(f'Deleting {filename} from {container}')
+    cmd = init_cmd + f' delete {container} {filename}'
+    #os.system(cmd)
+    r = subprocess.check_output(cmd, shell=True)
