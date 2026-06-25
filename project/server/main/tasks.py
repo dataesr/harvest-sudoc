@@ -3,6 +3,7 @@ import json
 import os
 import pymongo
 import requests
+from retry import retry
 
 from project.server.main.parser import parse, filter_notice
 from project.server.main.logger import get_logger
@@ -22,6 +23,7 @@ MONGO_COLLECTION = 'sudoc'
 #    return thesis and (thesis.text.lower() == 'thèse de doctorat') and (comment is None)
 
 
+@retry(delay=5, tries=50, backoff=2)
 def get_sudoc_ids(idref):
     logger.debug(f'Get all sudoc ids for idref {idref}')
     sudoc_ids = []
@@ -65,6 +67,11 @@ def get_sudoc_ids_old(idref: str) -> list:
     sudoc_ids = list(filter(None, sudoc_ids))
     return list(set(sudoc_ids))
 
+@retry(delay=5, tries=50, backoff=2)
+def get_a_sudoc_notice(sudoc_id):
+    notice_url = f'https://www.sudoc.fr/{sudoc_id}.xml'
+    notice_xml = requests.get(url=notice_url).text
+    return notice_xml
 
 def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False, force_parsing: bool = True) -> None:
     logger.debug(f'Task harvest notices for sudoc_ids {sudoc_ids}')
@@ -83,8 +90,7 @@ def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False, f
         for sudoc_id in chunk:
             notice_xml = None
             if force_download or sudoc_id not in ids_already_harvested:
-                notice_url = f'https://www.sudoc.fr/{sudoc_id}.xml'
-                notice_xml = requests.get(url=notice_url).text
+                notice_xml = get_a_sudoc_notice(sudoc_id)
                 current_file = open(f'{sudoc_id}.xml', 'w')
                 current_file.write(notice_xml)
                 current_file.close()
@@ -103,7 +109,7 @@ def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False, f
                 if filter_notice(soup=soup):
                     # make sure notice not stored on object storage
                     try:
-                        delete_object('sudoc', f'parsed/{sudoc_id[-2:]}/{sudoc_id}.json')
+                        delete_object('sudoc', f'json_parsed/{sudoc_id[-2:]}/{sudoc_id}.json')
                     except:
                         pass
                 else:
@@ -112,10 +118,10 @@ def create_task_harvest_notices(sudoc_ids: list, force_download: bool = False, f
                     out_file = open(f"{sudoc_id}.json", "w")
                     json.dump(notice_json, out_file, indent = 4, ensure_ascii=False)
                     out_file.close()
-                    upload_object('sudoc', f'{sudoc_id}.json', f'parsed/{sudoc_id[-2:]}/{sudoc_id}.xml')
+                    upload_object('sudoc', f'{sudoc_id}.json', f'json_parsed/{sudoc_id[-2:]}/{sudoc_id}.xml')
                     os.system(f'rm -rf {sudoc_id}.json')
                     #json_content = json.dump(notice_json, indent=4, ensure_ascii=False)
-                    #set_objects(all_objects=json_content, container='sudoc', path=f'parsed/{sudoc_id[-2:]}/{sudoc_id}.json')
+                    #set_objects(all_objects=json_content, container='sudoc', path=f'json_parsed/{sudoc_id[-2:]}/{sudoc_id}.json')
         if notices_json:
             with open(json_file, 'w') as file:
                 json.dump([{'sudoc_id': n['sudoc_id']} for n in notices_json], file)
